@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smultronstället - Mobil</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --primary: #0f172a;
+            --secondary: #334155;
+            --accent: #0ea5e9;
+            --success: #16a34a;
+            --danger: #dc2626;
+            --warning: #f59e0b;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text: #0f172a;
+            --border: #cbd5e1;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        body { background-color: var(--bg); color: var(--text); line-height: 1.4; padding: 12px; }
+        .container { max-width: 600px; margin: 0 auto; }
+
+        header {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white; padding: 15px; border-radius: 12px; margin-bottom: 15px;
+            display: flex; justify-content: space-between; align-items: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        }
+
+        h1 { font-size: 1.2rem; font-weight: 600; }
+        .user-badge { background: rgba(255,255,255,0.15); padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; }
+
+        .toolbar { 
+            display: flex; flex-direction: column; gap: 10px; 
+            background: white; padding: 12px; border-radius: 12px; 
+            border: 1px solid var(--border); margin-bottom: 15px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+        }
+        
+        input[type="text"], select { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 0.95rem; outline: none; background: #fff; }
+
+        .btn-row { display: flex; gap: 8px; justify-content: space-between; }
+        button { padding: 10px 14px; border: none; border-radius: 8px; font-size: 0.85rem; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 5px; flex: 1; }
+        .btn-primary { background-color: var(--accent); color: white; }
+        .btn-secondary { background-color: #e2e8f0; color: var(--primary); }
+        .btn-danger { background-color: #fee2e2; color: var(--danger); font-size: 0.75rem; padding: 6px 10px; flex: unset; }
+        .btn-warning { background-color: #fef3c7; color: #b45309; font-size: 0.75rem; padding: 6px 10px; flex: unset; }
+        .btn-restore { background-color: #dcfce7; color: var(--success); font-size: 0.75rem; padding: 6px 10px; }
+
+        /* Mobil-kort för kontakter */
+        .contact-card {
+            background: white; border: 1px solid var(--border); border-radius: 10px;
+            padding: 14px; margin-bottom: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+            display: flex; flex-direction: column; gap: 8px;
+        }
+        .contact-header { display: flex; justify-content: space-between; align-items: flex-start; }
+        .contact-name { font-size: 1.05rem; font-weight: 600; color: var(--primary); }
+        .contact-phone { font-size: 1.15rem; font-weight: 700; color: var(--accent); text-decoration: none; display: inline-block; margin: 2px 0; }
+        
+        .badge { background-color: #e0f2fe; color: #0369a1; padding: 2px 8px; border-radius: 10px; font-size: 0.7rem; display: inline-block; }
+        .badge-new { background-color: #dcfce7; color: #166534; padding: 2px 6px; border-radius: 6px; font-size: 0.65rem; font-weight: 600; margin-left: 4px; }
+        
+        .card-actions { display: flex; justify-content: flex-end; gap: 6px; margin-top: 4px; border-top: 1px solid #f1f5f9; padding-top: 8px; }
+
+        /* Modal */
+        .modal { display: flex; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(3px); justify-content: center; align-items: center; z-index: 1000; padding: 15px; }
+        .modal-content { background: white; padding: 20px; border-radius: 12px; width: 100%; max-width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+        .modal-large { background: white; padding: 20px; border-radius: 12px; width: 100%; max-width: 500px; max-height: 85vh; overflow-y: auto; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+        .form-group { margin-bottom: 12px; }
+        .form-group label { display: block; margin-bottom: 4px; font-size: 0.85rem; font-weight: 500; }
+        
+        /* Tabeller i modaler */
+        table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.85rem; }
+        th, td { padding: 8px 10px; border-bottom: 1px solid var(--border); }
+        th { font-weight: 600; color: var(--secondary); background-color: #f1f5f9; }
+    </style>
+</head>
+<body>
+
+    <!-- INLOGGNINGSMODAL -->
+    <div class="modal" id="loginModal">
+        <div class="modal-content">
+            <div style="font-size: 1.2rem; font-weight: 600; margin-bottom: 8px; color: var(--primary);">Välkommen 🍓</div>
+            <p style="font-size: 0.85rem; color: #64748b; margin-bottom: 15px;">Välj ditt namn för att öppna mobila vyn.</p>
+            <div class="form-group">
+                <label>Välj agent</label>
+                <select id="loginNameSelect">
+                    <option value="">-- Välj ditt namn --</option>
+                    <option value="Andrea">Andrea</option>
+                    <option value="Diana">Diana</option>
+                    <option value="Ella">Ella</option>
+                    <option value="Francis">Francis</option>
+                    <option value="Jasmin">Jasmin</option>
+                    <option value="Jenny">Jenny</option>
+                    <option value="Lindah">Lindah</option>
+                    <option value="Lotta">Lotta</option>
+                </select>
+            </div>
+            <button class="btn-primary" id="startBtn" style="width: 100%;">Starta</button>
+        </div>
+    </div>
+
+    <!-- MODAL: Ny Kontakt -->
+    <div class="modal" id="addModal" style="display: none;">
+        <div class="modal-content">
+            <div style="font-size: 1.1rem; font-weight: 600; margin-bottom: 12px; color: var(--primary);">Dela nytt nummer</div>
+            <div class="form-group">
+                <label>Namn / Företag</label>
+                <input type="text" id="inputName" placeholder="T.ex. Bank Support">
+            </div>
+            <div class="form-group">
+                <label>Telefonnummer</label>
+                <input type="text" id="inputPhone" placeholder="T.ex. 08-123 456">
+            </div>
+            <div class="form-group">
+                <label>Kategori</label>
+                <select id="inputCatSelect" onchange="checkCategorySelect(this)">
+                    <option value="">-- Välj befintlig eller skriv ny --</option>
+                </select>
+                <input type="text" id="inputCatCustom" placeholder="Ny kategori..." style="margin-top: 6px; display: none;">
+            </div>
+            <div style="display: flex; gap: 8px; margin-top: 15px;">
+                <button class="btn-secondary" onclick="closeAddModal()">Avbryt</button>
+                <button class="btn-primary" onclick="saveNewContact()">Spara</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: Ta bort (Orsak) -->
+    <div class="modal" id="deleteModal" style="display: none;">
+        <div class="modal-content">
+            <div style="font-size: 1.1rem; font-weight: 600; margin-bottom: 10px; color: var(--danger);">Ta bort ur poolen</div>
+            <p style="font-size: 0.85rem; color: #334155; margin-bottom: 12px;">Flyttar <strong id="deleteContactName"></strong> till papperskorgen för alla.</p>
+            <div class="form-group">
+                <label>Orsak:</label>
+                <select id="deleteReasonSelect">
+                    <option value="Felskrivning">Felskrivning / Dubblett</option>
+                    <option value="Inaktuellt">Inaktuellt nummer</option>
+                    <option value="Annat">Annan orsak</option>
+                </select>
+            </div>
+            <div style="display: flex; gap: 8px; margin-top: 15px;">
+                <button class="btn-secondary" onclick="closeDeleteModal()">Avbryt</button>
+                <button class="btn-danger" style="flex:1;" onclick="confirmSoftDelete()">Ta bort</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: Dolda & Papperskorg -->
+    <div class="modal" id="listModal" style="display: none;">
+        <div class="modal-large">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <div id="modalTitle" style="font-size: 1.1rem; font-weight: 600; color: var(--primary);">Lista</div>
+                <button class="btn-secondary" style="flex: unset; padding: 6px 12px;" onclick="closeListModal()">Stäng</button>
+            </div>
+            <div style="overflow-x: auto;">
+                <table id="modalTable">
+                    <tbody id="modalTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <header>
+            <div>
+                <h1>Smultronstället</h1>
+                <p style="opacity: 0.8; font-size: 0.7rem;">Mobilversion</p>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <div class="user-badge" id="currentUserDisplay">-</div>
+                <button class="btn-secondary" style="padding: 4px 8px; font-size: 0.7rem; flex: unset;" onclick="changeUser()">Byt</button>
+            </div>
+        </header>
+
+        <!-- VERKTYGSFÄLT -->
+        <div class="toolbar">
+            <input type="text" id="searchInput" placeholder="🔍 Sök namn eller nummer..." onkeyup="filterData()">
+            <select id="categoryFilter" onchange="filterData()">
+                <option value="">Alla kategorier</option>
+            </select>
+            <div class="btn-row">
+                <button class="btn-secondary" onclick="openHiddenModal()" style="font-size: 0.75rem;">🙈 Dolda</button>
+                <button class="btn-secondary" onclick="openBinModal()" style="font-size: 0.75rem; color: #991b1b;">🗑️ Logg</button>
+                <button class="btn-primary" onclick="openAddModal()" style="font-size: 0.75rem;">+ Nytt</button>
+            </div>
+        </div>
+
+        <!-- KONTAKTLISTA (Kort) -->
+        <div id="contactListContainer">
+            <div style="text-align:center; padding: 30px; color: #64748b; font-size: 0.9rem;">Laddar kontakter...</div>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://ipbfauhmrotrdnkfwsms.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlwYmZhdWhtcm90cmRua2Z3c21zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxMzczNjgsImV4cCI6MjEwMjcxMzM2OH0.p5PLukzb8Ox2OqRzkOwhrCgG_46Y7evIMBTnHECGaCQ';
+        
+        const supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+
+        let currentAgent = localStorage.getItem('smultron_agent_name') || '';
+        let allContacts = [];
+        let hiddenContactIds = new Set();
+        let categories = [];
+        let contactToDeleteId = null;
+        let currentModalMode = '';
+
+        window.onload = function() {
+            const loginModal = document.getElementById('loginModal');
+            if (!currentAgent) {
+                if (loginModal) loginModal.style.display = 'flex';
+            } else {
+                if (loginModal) loginModal.style.display = 'none';
+                initApp();
+            }
+
+            document.getElementById('startBtn').onclick = function() {
+                const name = document.getElementById('loginNameSelect').value;
+                if (!name) { alert("Välj ditt namn."); return; }
+                localStorage.setItem('smultron_agent_name', name);
+                currentAgent = name;
+                loginModal.style.display = 'none';
+                initApp();
+            };
+        };
+
+        function changeUser() {
+            localStorage.removeItem('smultron_agent_name');
+            location.reload();
+        }
+
+        async function initApp() {
+            document.getElementById('currentUserDisplay').innerText = currentAgent;
+            await fetchContacts();
+            setInterval(fetchContacts, 120000);
+        }
+
+        async function fetchContacts() {
+            if (!supabaseClient) return;
+
+            const { data: contacts, error } = await supabaseClient
+                .from('smultronstallet_contacts')
+                .select('*')
+                .order('created_at', { ascending: false });
+
+            const { data: hiddenData } = await supabaseClient
+                .from('smultronstallet_hidden')
+                .select('contact_id')
+                .eq('agent_name', currentAgent);
+
+            if (error) { console.error(error); return; }
+
+            allContacts = contacts || [];
+            hiddenContactIds = new Set(hiddenData ? hiddenData.map(h => h.contact_id) : []);
+
+            updateCategoryDropdowns();
+            filterData();
+        }
+
+        function updateCategoryDropdowns() {
+            const activeCats = allContacts.filter(c => !c.deleted_at).map(c => c.category).filter(Boolean);
+            categories = [...new Set(activeCats)].sort();
+            
+            const filterSelect = document.getElementById('categoryFilter');
+            let html = '<option value="">Alla kategorier</option>';
+            categories.forEach(cat => { html += `<option value="${cat}">${cat}</option>`; });
+            filterSelect.innerHTML = html;
+
+            const modalSelect = document.getElementById('inputCatSelect');
+            let modalHtml = '<option value="">-- Välj eller skriv ny --</option>';
+            categories.forEach(cat => { modalHtml += `<option value="${cat}">${cat}</option>`; });
+            modalHtml += '<option value="__new__">+ Ny kategori...</option>';
+            modalSelect.innerHTML = modalHtml;
+        }
+
+        function filterData() {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            const selectedCat = document.getElementById('categoryFilter').value;
+
+            const filtered = allContacts.filter(item => {
+                if (item.deleted_at) return false;
+                const matchesQuery = item.name.toLowerCase().includes(query) || item.phone.toLowerCase().includes(query);
+                const matchesCat = selectedCat === "" || item.category === selectedCat;
+                return matchesQuery && matchesCat;
+            });
+
+            renderCards(filtered);
+        }
+
+        function renderCards(displayList) {
+            const container = document.getElementById('contactListContainer');
+            const activeList = displayList.filter(item => !hiddenContactIds.has(item.id));
+
+            if (activeList.length === 0) {
+                container.innerHTML = `<div style="text-align:center; padding: 30px; color: #64748b; font-size: 0.9rem;">Inga kontakter hittades.</div>`;
+                return;
+            }
+
+            let html = '';
+            activeList.forEach(item => {
+                const isNew = (new Date() - new Date(item.created_at)) / (1000 * 60) < 15;
+                html += `
+                    <div class="contact-card">
+                        <div class="contact-header">
+                            <div>
+                                <span class="contact-name">${escapeHtml(item.name)}</span>
+                                ${isNew ? '<span class="badge-new">NYTT</span>' : ''}
+                                <div><span class="badge">${escapeHtml(item.category || 'Övrigt')}</span></div>
+                            </div>
+                        </div>
+                        <div>
+                            <a href="tel:${escapeHtml(item.phone)}" class="contact-phone">📞 ${escapeHtml(item.phone)}</a>
+                        </div>
+                        <div class="card-actions">
+                            <button class="btn-danger" onclick="hideContact('${item.id}')">Dölj</button>
+                            <button class="btn-warning" onclick="openDeleteModal('${item.id}', '${escapeHtml(item.name)}')">Ta bort</button>
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        async function hideContact(contactId) {
+            await supabaseClient.from('smultronstallet_hidden').insert([{ agent_name: currentAgent, contact_id: contactId }]);
+            await fetchContacts();
+        }
+
+        function openDeleteModal(id, name) {
+            contactToDeleteId = id;
+            document.getElementById('deleteContactName').innerText = name;
+            document.getElementById('deleteReasonSelect').value = 'Felskrivning';
+            document.getElementById('deleteModal').style.display = 'flex';
+        }
+
+        function closeDeleteModal() {
+            document.getElementById('deleteModal').style.display = 'none';
+            contactToDeleteId = null;
+        }
+
+        async function confirmSoftDelete() {
+            if (!contactToDeleteId) return;
+            const reason = document.getElementById('deleteReasonSelect').value;
+            await supabaseClient.from('smultronstallet_contacts').update({
+                deleted_at: new Date().toISOString(),
+                deleted_by: currentAgent,
+                deleted_reason: reason
+            }).eq('id', contactToDeleteId);
+
+            closeDeleteModal();
+            await fetchContacts();
+        }
+
+        function openHiddenModal() {
+            currentModalMode = 'hidden';
+            document.getElementById('modalTitle').innerText = '🙈 Dina dolda kontakter';
+            const hiddenList = allContacts.filter(item => hiddenContactIds.has(item.id) && !item.deleted_at);
+            
+            let html = '';
+            if (hiddenList.length === 0) {
+                html = `<tr><td colspan="3" style="text-align:center; color:#64748b;">Inga dolda kontakter.</td></tr>`;
+            } else {
+                hiddenList.forEach(item => {
+                    html += `<tr><td><b>${escapeHtml(item.name)}</b><br><a href="tel:${escapeHtml(item.phone)}">${escapeHtml(item.phone)}</a></td><td><span class="badge">${escapeHtml(item.category || 'Övrigt')}</span></td><td style="text-align:right;"><button class="btn-restore" onclick="unhideContact('${item.id}')">Visa</button></td></tr>`;
+                });
+            }
+            document.getElementById('modalTableBody').innerHTML = html;
+            document.getElementById('listModal').style.display = 'flex';
+        }
+
+        async function unhideContact(id) {
+            await supabaseClient.from('smultronstallet_hidden').delete().eq('agent_name', currentAgent).eq('contact_id', id);
+            await fetchContacts();
+            openHiddenModal();
+        }
+
+        function openBinModal() {
+            currentModalMode = 'bin';
+            document.getElementById('modalTitle').innerText = '🗑️ Papperskorg & Logg';
+            const binList = allContacts.filter(item => item.deleted_at);
+
+            let html = '';
+            if (binList.length === 0) {
+                html = `<tr><td colspan="3" style="text-align:center; color:#64748b;">Papperskorgen är tom.</td></tr>`;
+            } else {
+                binList.sort((a, b) => new Date(b.deleted_at) - new Date(a.deleted_at)).forEach(item => {
+                    html += `<tr><td><b>${escapeHtml(item.name)}</b><br><small>${escapeHtml(item.phone)}</small><br><span style="color:#991b1b; font-size:0.75rem;">Av: ${escapeHtml(item.deleted_by)} (${escapeHtml(item.deleted_reason)})</span></td><td><span class="badge">${escapeHtml(item.category || 'Övrigt')}</span></td><td style="text-align:right;"><button class="btn-restore" onclick="restoreFromBin('${item.id}')">Ångra</button></td></tr>`;
+                });
+            }
+            document.getElementById('modalTableBody').innerHTML = html;
+            document.getElementById('listModal').style.display = 'flex';
+        }
+
+        async function restoreFromBin(id) {
+            await supabaseClient.from('smultronstallet_contacts').update({ deleted_at: null, deleted_by: null, deleted_reason: null }).eq('id', id);
+            await fetchContacts();
+            openBinModal();
+        }
+
+        function closeListModal() { document.getElementById('listModal').style.display = 'none'; }
+        function openAddModal() { document.getElementById('addModal').style.display = 'flex'; }
+        function closeAddModal() { document.getElementById('addModal').style.display = 'none'; }
+
+        async function saveNewContact() {
+            const name = document.getElementById('inputName').value.trim();
+            const phone = document.getElementById('inputPhone').value.trim();
+            const catSelect = document.getElementById('inputCatSelect').value;
+            const catCustom = document.getElementById('inputCatCustom').value.trim();
+            const category = catSelect === '__new__' ? catCustom : catSelect;
+
+            if (!name || !phone) { alert("Fyll i namn och telefonnummer."); return; }
+
+            await supabaseClient.from('smultronstallet_contacts').insert([{ name, phone, category, created_by: currentAgent }]);
+            closeAddModal();
+            document.getElementById('inputName').value = '';
+            document.getElementById('inputPhone').value = '';
+            document.getElementById('inputCatCustom').value = '';
+            await fetchContacts();
+        }
+
+        function checkCategorySelect(select) {
+            document.getElementById('inputCatCustom').style.display = select.value === '__new__' ? 'block' : 'none';
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+    </script>
+</body>
+</html>
