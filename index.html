@@ -66,7 +66,7 @@
         .btn-warning { background-color: #fef3c7; color: #b45309; padding: 6px 10px; font-size: 0.8rem; }
         .btn-warning:hover { background-color: #f59e0b; color: white; }
         .btn-restore { background-color: #dcfce7; color: var(--success); padding: 6px 12px; font-size: 0.8rem; border: 1px solid #bbf7d0; }
-        .btn-restore:hover { background-color: #success; color: white; }
+        .btn-restore:hover { background-color: var(--success); color: white; }
 
         .action-buttons { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
 
@@ -403,7 +403,7 @@
                 let html = '<option value="">-- Välj befintlig eller skriv ny --</option>';
                 categories.forEach(cat => { html += `<option value="${cat}">${cat}</option>`; });
                 html += '<option value="__new__">+ Lägg till ny kategori...</option>';
-                modalSelect.html = html;
+                modalSelect.innerHTML = html; // Åtgärdat från .html till .innerHTML
             }
         }
 
