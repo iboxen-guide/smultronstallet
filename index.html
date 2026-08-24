@@ -66,7 +66,9 @@
         .btn-warning { background-color: #fef3c7; color: #b45309; padding: 6px 10px; font-size: 0.8rem; }
         .btn-warning:hover { background-color: #f59e0b; color: white; }
         .btn-restore { background-color: #dcfce7; color: var(--success); padding: 6px 12px; font-size: 0.8rem; border: 1px solid #bbf7d0; }
-        .btn-restore:hover { background-color: var(--success); color: white; }
+        .btn-restore:hover { background-color: #success; color: white; }
+        .btn-copy { background-color: #f1f5f9; color: var(--secondary); padding: 4px 8px; font-size: 0.75rem; border: 1px solid var(--border); }
+        .btn-copy:hover { background-color: #e2e8f0; color: var(--primary); }
 
         .action-buttons { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
 
@@ -253,7 +255,7 @@
                             <thead>
                                 <tr>
                                     <th>Namn / Enhet</th>
-                                    <th>Telefonnummer</th>
+                                    <th style="white-space: nowrap;">Telefonnummer</th>
                                     <th>Kategori</th>
                                     <th style="text-align: right; min-width: 155px;">Åtgärd</th>
                                 </tr>
@@ -403,7 +405,7 @@
                 let html = '<option value="">-- Välj befintlig eller skriv ny --</option>';
                 categories.forEach(cat => { html += `<option value="${cat}">${cat}</option>`; });
                 html += '<option value="__new__">+ Lägg till ny kategori...</option>';
-                modalSelect.innerHTML = html; // Åtgärdat från .html till .innerHTML
+                modalSelect.innerHTML = html;
             }
         }
 
@@ -433,6 +435,22 @@
             }
         }
 
+        function copyPhoneNumber(phone, btnElement) {
+            navigator.clipboard.writeText(phone).then(() => {
+                const originalText = btnElement.innerText;
+                btnElement.innerText = 'Kopierat! ✨';
+                btnElement.style.backgroundColor = '#dcfce7';
+                btnElement.style.color = '#166534';
+                setTimeout(() => {
+                    btnElement.innerText = originalText;
+                    btnElement.style.backgroundColor = '';
+                    btnElement.style.color = '';
+                }, 1500);
+            }).catch(err => {
+                console.error('Kunde inte kopiera:', err);
+            });
+        }
+
         function renderTable(displayList) {
             const tbody = document.getElementById('tableBody');
             if (!tbody) return;
@@ -449,7 +467,12 @@
                 html += `
                     <tr>
                         <td><strong>${escapeHtml(item.name)}</strong></td>
-                        <td><a href="tel:${escapeHtml(item.phone)}" style="color: var(--accent); text-decoration: none;">${escapeHtml(item.phone)}</a></td>
+                        <td style="white-space: nowrap;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <a href="tel:${escapeHtml(item.phone)}" style="color: var(--accent); text-decoration: none;">${escapeHtml(item.phone)}</a>
+                                <button class="btn-copy" onclick="copyPhoneNumber('${escapeHtml(item.phone)}', this)" title="Kopiera nummer">Kopiera</button>
+                            </div>
+                        </td>
                         <td><span class="badge">${escapeHtml(item.category || 'Övrigt')}</span></td>
                         <td style="text-align: right;">
                             <div class="action-buttons">
