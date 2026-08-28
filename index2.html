@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🍓 Smultronstället</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --primary: #0f172a;
+            --secondary: #334155;
+            --accent: #0ea5e9;
+            --success: #16a34a;
+            --danger: #dc2626;
+            --warning: #f59e0b;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text: #0f172a;
+            --border: #cbd5e1;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        body { background-color: var(--bg); color: var(--text); line-height: 1.5; padding: 20px; }
+        .container { max-width: 1400px; margin: 0 auto; }
+
+        header {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white; padding: 20px 30px; border-radius: 12px; margin-bottom: 20px;
+            display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+
+        h1 { font-size: 1.5rem; font-weight: 600; }
+        .user-badge { background: rgba(255,255,255,0.15); padding: 6px 14px; border-radius: 20px; font-size: 0.85rem; }
+
+        .main-layout { display: grid; grid-template-columns: 1fr 320px; gap: 20px; align-items: start; }
+        @media(max-width: 900px) { .main-layout { grid-template-columns: 1fr; } }
+
+        .card { background: var(--card-bg); border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid var(--border); box-shadow: 0 2px 10px rgba(0,0,0,0.03); }
+
+        /* FLYTANDE VERKTYGSFÄLT (SÖKRUTA) */
+        .toolbar { 
+            display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; 
+            position: sticky; 
+            top: 0; 
+            z-index: 100; 
+            background-color: rgba(255, 255, 255, 0.95); 
+            backdrop-filter: blur(8px);
+            padding: 20px; 
+            margin: -20px -20px 15px -20px; 
+            border-bottom: 1px solid var(--border);
+            border-radius: 12px 12px 0 0;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+
+        input[type="text"], input[type="password"], select, textarea { padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px; font-size: 0.90rem; outline: none; background: white; width: 100%; }
+        input[type="text"] { flex: 1; min-width: 150px; }
+
+        button { padding: 10px 16px; border: none; border-radius: 8px; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+        .btn-primary { background-color: var(--accent); color: white; }
+        .btn-primary:hover { background-color: #0284c7; }
+        .btn-secondary { background-color: #e2e8f0; color: var(--primary); }
+        .btn-secondary:hover { background-color: #cbd5e1; }
+        .btn-danger { background-color: #fee2e2; color: var(--danger); padding: 6px 10px; font-size: 0.8rem; }
+        .btn-danger:hover { background-color: var(--danger); color: white; }
+        .btn-warning { background-color: #fef3c7; color: #b45309; padding: 6px 10px; font-size: 0.8rem; }
+        .btn-warning:hover { background-color: #f59e0b; color: white; }
+        .btn-restore { background-color: #dcfce7; color: var(--success); padding: 6px 12px; font-size: 0.8rem; border: 1px solid #bbf7d0; }
+        .btn-restore:hover { background-color: #16a34a; color: white; }
+        .btn-copy { background-color: #f1f5f9; color: var(--secondary); padding: 4px 8px; font-size: 0.75rem; border: 1px solid var(--border); }
+        .btn-copy:hover { background-color: #e2e8f0; color: var(--primary); }
+
+        .action-buttons { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
+
+        table { width: 100%; border-collapse: collapse; text-align: left; }
+        th, td { padding: 10px 14px; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
+        th { font-weight: 600; color: var(--secondary); background-color: #f1f5f9; }
+
+        .badge { background-color: #e0f2fe; color: #0369a1; padding: 3px 8px; border-radius: 10px; font-size: 0.75rem; }
+        .badge-bin { background-color: #fee2e2; color: #991b1b; padding: 3px 8px; border-radius: 10px; font-size: 0.75rem; margin-left: 6px; }
+        .badge-reason { background-color: #fef3c7; color: #b45309; padding: 3px 8px; border-radius: 10px; font-size: 0.75rem; }
+
+        .row-bin { background-color: #fef2f2; opacity: 0.9; }
+
+        /* FLYTANDE HÖGERSPALT FÖR KLADDPAPPER */
+        .sidebar-sticky { position: sticky; top: 20px; }
+
+        /* Post-it kladdpapper */
+        .postit { background: #fef08a; border: 1px solid #fde047; border-radius: 8px; padding: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 15px; }
+        .postit textarea { width: 100%; height: 130px; background: transparent; border: none; resize: vertical; font-size: 0.9rem; outline: none; color: #713f12; margin-top: 8px; }
+        .postit-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 5px; }
+
+        /* Modals */
+        .modal { display: flex; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: white; padding: 30px; border-radius: 12px; width: 100%; max-width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+        .modal-large { background: white; padding: 30px; border-radius: 12px; width: 100%; max-width: 900px; max-height: 80vh; overflow-y: auto; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 6px; font-size: 0.9rem; font-weight: 500; }
+    </style>
+</head>
+<body>
+
+    <!-- INLOGGNINGSMODAL -->
+    <div class="modal" id="loginModal">
+        <div class="modal-content">
+            <div style="font-size: 1.3rem; font-weight: 600; margin-bottom: 10px; color: var(--primary);">Välkommen till Smultronstället 🍓</div>
+            <p style="font-size: 0.9rem; color: #64748b; margin-bottom: 20px;">Välj ditt namn i listan för att öppna din vy.</p>
+            <div class="form-group">
+                <label>Välj agent</label>
+                <select id="loginNameSelect">
+                    <option value="">-- Välj ditt namn --</option>
+                    <option value="Andrea">Andrea</option>
+                    <option value="Diana">Diana</option>
+                    <option value="Ella">Ella</option>
+                    <option value="Francis">Francis</option>
+                    <option value="Jasmin">Jasmin</option>
+                    <option value="Jenny">Jenny</option>
+                    <option value="Lindah">Lindah</option>
+                    <option value="Lotta">Lotta</option>
+                </select>
+            </div>
+            <button class="btn-primary" id="startBtn" style="width: 100%; justify-content: center;">Starta</button>
+        </div>
+    </div>
+
+    <!-- MODAL: Ny Kontakt -->
+    <div class="modal" id="addModal" style="display: none;">
+        <div class="modal-content">
+            <div style="font-size: 1.2rem; font-weight: 600; margin-bottom: 15px; color: var(--primary);">Dela nytt nummer</div>
+            <div class="form-group">
+                <label>Namn / Företag</label>
+                <input type="text" id="inputName" placeholder="T.ex. Bank Support">
+            </div>
+            <div class="form-group">
+                <label>Telefonnummer</label>
+                <input type="text" id="inputPhone" placeholder="T.ex. 08-123 456">
+            </div>
+            <div class="form-group">
+                <label>Kategori</label>
+                <select id="inputCatSelect" onchange="checkCategorySelect(this)">
+                    <option value="">-- Välj befintlig eller skriv ny --</option>
+                </select>
+                <input type="text" id="inputCatCustom" placeholder="Eller skriv ny kategori här..." style="margin-top: 8px; display: none;">
+            </div>
+            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
+                <button class="btn-secondary" onclick="closeAddModal()">Avbryt</button>
+                <button class="btn-primary" onclick="saveNewContact()">Dela till poolen</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: Hantera Kategorier -->
+    <div class="modal" id="categoryManagerModal" style="display: none;">
+        <div class="modal-large">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <div style="font-size: 1.2rem; font-weight: 600; color: var(--primary);">🏷️ Hantera kategorier</div>
+                <button class="btn-secondary" onclick="closeCategoryManagerModal()">Stäng</button>
+            </div>
+            <p style="font-size: 0.85rem; color: #64748b; margin-bottom: 15px;">Här kan du lägga till nya, döpa om (editera) eller ta bort kategorier. Om du tar bort eller byter namn uppdateras kopplade kontakter automatiskt.</p>
+            
+            <div style="display: flex; gap: 10px; margin-bottom: 20px; background: #f1f5f9; padding: 15px; border-radius: 8px;">
+                <input type="text" id="newCategoryInput" placeholder="Skriv namn på ny kategori...">
+                <button class="btn-primary" onclick="addNewCategoryFromManager()">+ Lägg till kategori</button>
+            </div>
+
+            <div style="overflow-x: auto;">
+                <table>
+                    <thead><tr><th>Kategorinamn</th><th>Antal kontakter</th><th style="text-align: right; min-width: 180px;">Åtgärd</th></tr></thead>
+                    <tbody id="categoryManagerTableBody">
+                        <tr><td colspan="3" style="text-align:center; padding: 20px; color: #64748b;">Laddar kategorier...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: Personligt dolda -->
+    <div class="modal" id="hiddenModal" style="display: none;">
+        <div class="modal-large">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <div style="font-size: 1.2rem; font-weight: 600; color: var(--primary);">🙈 Dina dolda kontakter</div>
+                <button class="btn-secondary" onclick="closeHiddenModal()">Stäng</button>
+            </div>
+            <p style="font-size: 0.85rem; color: #64748b; margin-bottom: 15px;">Dessa är bara dolda för dig personligen. Klicka "Visa igen" för att återställa dem till din vy.</p>
+            <div style="overflow-x: auto;">
+                <table>
+                    <thead><tr><th>Namn / Enhet</th><th>Telefonnummer</th><th>Kategori</th><th style="text-align: right; min-width: 100px;">Åtgärd</th></tr></thead>
+                    <tbody id="hiddenTableBody">
+                        <tr><td colspan="4" style="text-align:center; padding: 20px; color: #64748b;">Laddar dolda...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: Ta bort (Bekräfta orsak) -->
+    <div class="modal" id="deleteModal" style="display: none;">
+        <div class="modal-content">
+            <div style="font-size: 1.2rem; font-weight: 600; margin-bottom: 15px; color: var(--danger);">Ta bort ur poolen</div>
+            <p style="font-size: 0.9rem; color: #334155; margin-bottom: 15px;">Du är på väg att flytta <strong id="deleteContactName"></strong> till papperskorgen för alla användare. Åtgärden loggas med ditt namn.</p>
+            <div class="form-group">
+                <label>Varför tar du bort numret?</label>
+                <select id="deleteReasonSelect">
+                    <option value="Felskrivning">Felskrivning / Dubblett</option>
+                    <option value="Inaktuellt">Inaktuellt nummer</option>
+                    <option value="Annat">Annan orsak</option>
+                </select>
+            </div>
+            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
+                <button class="btn-secondary" onclick="closeDeleteModal()">Avbryt</button>
+                <button class="btn-danger" onclick="confirmSoftDelete()">Ta bort</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: Papperskorg / Logg -->
+    <div class="modal" id="binModal" style="display: none;">
+        <div class="modal-large">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <div style="font-size: 1.2rem; font-weight: 600; color: #991b1b;">🗑️ Papperskorg & Ändringslogg</div>
+                <button class="btn-secondary" onclick="closeBinModal()">Stäng</button>
+            </div>
+            <p style="font-size: 0.85rem; color: #64748b; margin-bottom: 15px;">Här loggas kontakter som tagits bort från den gemensamma poolen. Om en kontakt raderats av misstag kan du återställa den härifrån. Poster rensas permanent efter 3 månader.</p>
+            <div style="overflow-x: auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Namn / Enhet</th>
+                            <th>Kategori</th>
+                            <th>Raderad av</th>
+                            <th>Orsak</th>
+                            <th>Datum (Logg)</th>
+                            <th style="text-align: right; min-width: 90px;">Åtgärd</th>
+                        </tr>
+                    </thead>
+                    <tbody id="binTableBody">
+                        <tr><td colspan="6" style="text-align:center; padding: 20px; color: #64748b;">Laddar papperskorgen...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <header>
+            <div>
+                <h1>Smultronstället</h1>
+                <p style="opacity: 0.8; font-size: 0.80rem; margin-top: 2px;">Delat kontaktnav & samtalsstöd</p>
+            </div>
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <div class="user-badge" id="currentUserDisplay">Aktiv: -</div>
+                <button class="btn-secondary" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.4); font-size: 0.8rem; padding: 5px 10px;" onclick="changeUser()">Byt namn</button>
+            </div>
+        </header>
+
+        <div class="main-layout">
+            <!-- VÄNSTER SPALT: Tabellen -->
+            <div>
+                <div class="card" style="margin-bottom: 0;">
+                                    
+                    <!-- Verktygsfält med sökfält och en fast Rensa-knapp -->
+                    <div class="toolbar">
+                        <div style="display: flex; gap: 8px; flex: 1; flex-wrap: wrap; align-items: center;">
+                            <input type="text" id="searchInput" placeholder="Sök namn, nummer..." onkeyup="filterData()">
+                            <button class="btn-secondary" onclick="clearSearchInput()" style="font-size: 0.8rem; padding: 10px 12px;" title="Rensa sökfältet">Rensa</button>
+                            <select id="categoryFilter" onchange="filterData()">
+                                <option value="">Alla kategorier</option>
+                            </select>
+                        </div>
+                        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                            <button class="btn-secondary" onclick="openCategoryManagerModal()" style="font-size: 0.8rem;">🏷️ Hantera kategorier</button>
+                            <button class="btn-secondary" onclick="openHiddenModal()" style="font-size: 0.8rem;">🙈 Mina Dolda</button>
+                            <button class="btn-secondary" onclick="openBinModal()" style="font-size: 0.8rem; background-color: #fee2e2; color: #991b1b;">🗑️ Logg & Bin</button>
+                            <button class="btn-primary" onclick="openAddModal()">+ Dela nytt nummer</button>
+                        </div>
+                    </div>
+
+                    <!-- HUVUDTABELL -->
+                    <div style="overflow-x: auto;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Namn / Enhet</th>
+                                    <th style="white-space: nowrap;">Telefonnummer</th>
+                                    <th>Kategori</th>
+                                    <th style="text-align: right; min-width: 155px;">Åtgärd</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tableBody">
+                                <tr><td colspan="4" style="text-align:center; padding: 30px; color: #64748b;">Laddar kontakter...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- HÖGER SPALT: Kladdpapper -->
+            <div class="sidebar-sticky">
+                <!-- KLADDPAPPER 1 -->
+                <div class="postit">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-weight: 600; color: #713f12; font-size: 0.85rem;">📝 Kladdpapper 1</span>
+                    </div>
+                    <textarea id="scratchpad1" placeholder="Anteckning 1..."></textarea>
+                    <div class="postit-actions">
+                        <button style="background: transparent; border: none; color: #b45309; font-size: 0.75rem; cursor: pointer; padding: 2px;" onclick="downloadNote('scratchpad1', 'kladdpapper-1.txt')">Spara fil</button>
+                        <span style="color: #d97706; font-size: 0.75rem;">•</span>
+                        <button style="background: transparent; border: none; color: #b45309; font-size: 0.75rem; cursor: pointer; padding: 2px;" onclick="document.getElementById('scratchpad1').value=''">Rensa</button>
+                    </div>
+                </div>
+
+                <!-- KLADDPAPPER 2 -->
+                <div class="postit">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-weight: 600; color: #713f12; font-size: 0.85rem;">📝 Kladdpapper 2</span>
+                    </div>
+                    <textarea id="scratchpad2" placeholder="Anteckning 2..."></textarea>
+                    <div class="postit-actions">
+                        <button style="background: transparent; border: none; color: #b45309; font-size: 0.75rem; cursor: pointer; padding: 2px;" onclick="downloadNote('scratchpad2', 'kladdpapper-2.txt')">Spara fil</button>
+                        <span style="color: #d97706; font-size: 0.75rem;">•</span>
+                        <button style="background: transparent; border: none; color: #b45309; font-size: 0.75rem; cursor: pointer; padding: 2px;" onclick="document.getElementById('scratchpad2').value=''">Rensa</button>
+                    </div>
+                </div>
+
+                <!-- KLADDPAPPER 3 -->
+                <div class="postit">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-weight: 600; color: #713f12; font-size: 0.85rem;">📝 Kladdpapper 3</span>
+                    </div>
+                    <textarea id="scratchpad3" placeholder="Anteckning 3..."></textarea>
+                    <div class="postit-actions">
+                        <button style="background: transparent; border: none; color: #b45309; font-size: 0.75rem; cursor: pointer; padding: 2px;" onclick="downloadNote('scratchpad3', 'kladdpapper-3.txt')">Spara fil</button>
+                        <span style="color: #d97706; font-size: 0.75rem;">•</span>
+                        <button style="background: transparent; border: none; color: #b45309; font-size: 0.75rem; cursor: pointer; padding: 2px;" onclick="document.getElementById('scratchpad3').value=''">Rensa</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://ipbfauhmrotrdnkfwsms.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlwYmZhdWhtcm90cmRua2Z3c21zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxMzczNjgsImV4cCI6MjEwMjcxMzM2OH0.p5PLukzb8Ox2OqRzkOwhrCgG_46Y7evIMBTnHECGaCQ';
+        
+        const supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+
+        let currentAgent = localStorage.getItem('smultron_agent_name') || '';
+        let allContacts = [];
+        let hiddenContactIds = new Set();
+        let categories = [];
+        let contactToDeleteId = null;
+
+        window.onload = function() {
+            const loginModal = document.getElementById('loginModal');
+            if (!currentAgent) {
+                if (loginModal) loginModal.style.display = 'flex';
+            } else {
+                if (loginModal) loginModal.style.display = 'none';
+                initApp();
+            }
+
+            const startBtn = document.getElementById('startBtn');
+            if (startBtn) {
+                startBtn.onclick = function() {
+                    const select = document.getElementById('loginNameSelect');
+                    const name = select ? select.value : '';
+                    if (!name) {
+                        alert("Vänligen välj ditt namn i listan.");
+                        return;
+                    }
+                    localStorage.setItem('smultron_agent_name', name);
+                    currentAgent = name;
+                    if (loginModal) loginModal.style.display = 'none';
+                    initApp();
+                };
+            }
+        };
+
+        function changeUser() {
+            localStorage.removeItem('smultron_agent_name');
+            location.reload();
+        }
+
+        async function initApp() {
+            const badge = document.getElementById('currentUserDisplay');
+            if (badge) badge.innerText = `Aktiv: ${currentAgent}`;
+            await fetchContacts();
+            setInterval(fetchContacts, 120000);
+        }
+
+        async function fetchContacts() {
+            if (!supabaseClient) return;
+
+            const { data: contacts, error } = await supabaseClient
+                .from('smultronstallet_contacts')
+                .select('*')
+                .order('created_at', { ascending: false });
+
+            const { data: hiddenData } = await supabaseClient
+                .from('smultronstallet_hidden')
+                .select('contact_id')
+                .eq('agent_name', currentAgent);
+
+            if (error) {
+                console.error("Fel vid hämtning:", error);
+                return;
+            }
+
+            allContacts = contacts || [];
+            hiddenContactIds = new Set(hiddenData ? hiddenData.map(h => h.contact_id) : []);
+
+            updateCategoryDropdowns();
+            filterData();
+            renderHiddenModalList();
+            renderBinModalList();
+            renderCategoryManagerTable();
+        }
+
+        function updateCategoryDropdowns() {
+            const activeCats = allContacts.filter(c => !c.deleted_at).map(c => c.category).filter(Boolean);
+            categories = [...new Set(activeCats)].sort();
+            
+            const filterSelect = document.getElementById('categoryFilter');
+            if (filterSelect) {
+                let html = '<option value="">Alla kategorier</option>';
+                categories.forEach(cat => { html += `<option value="${cat}">${cat}</option>`; });
+                filterSelect.innerHTML = html;
+            }
+
+            const modalSelect = document.getElementById('inputCatSelect');
+            if (modalSelect) {
+                let html = '<option value="">-- Välj befintlig eller skriv ny --</option>';
+                categories.forEach(cat => { html += `<option value="${cat}">${cat}</option>`; });
+                html += '<option value="__new__">+ Lägg till ny kategori...</option>';
+                modalSelect.innerHTML = html;
+            }
+        }
+
+        function renderCategoryManagerTable() {
+            const tbody = document.getElementById('categoryManagerTableBody');
+            if (!tbody) return;
+
+            const activeCats = allContacts.filter(c => !c.deleted_at).map(c => c.category).filter(Boolean);
+            const uniqueCats = [...new Set(activeCats)].sort();
+
+            if (uniqueCats.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="3" style="text-align:center; padding: 20px; color: #64748b;">Inga aktiva kategorier hittades.</td></tr>`;
+                return;
+            }
+
+            let html = '';
+            uniqueCats.forEach(cat => {
+                const count = allContacts.filter(c => !c.deleted_at && c.category === cat).length;
+                html += `
+                    <tr>
+                        <td><strong>${escapeHtml(cat)}</strong></td>
+                        <td><span class="badge">${count} st kontakter</span></td>
+                        <td style="text-align: right;">
+                            <div class="action-buttons">
+                                <button class="btn-warning" onclick="renameCategoryPrompt('${escapeHtml(cat)}')">Editera</button>
+                                <button class="btn-danger" onclick="deleteCategory('${escapeHtml(cat)}')">Ta bort</button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+            tbody.innerHTML = html;
+        }
+
+        async function addNewCategoryFromManager() {
+            const input = document.getElementById('newCategoryInput');
+            const catName = input ? input.value.trim() : '';
+            if (!catName) {
+                alert("Vänligen skriv ett namn på kategorin.");
+                return;
+            }
+            if (categories.includes(catName)) {
+                alert("Kategorin finns redan.");
+                return;
+            }
+            // Skapa en tom "skuggkontakt" eller bara lägg till i listan genom att uppdatera vyn
+            // Eftersom kategorier skapas dynamiskt från kontakter, lägger vi till den genom att visa ett meddelande
+            // eller så kan användaren direkt koppla den. Vi sparar en dummy eller informerar:
+            alert(`Kategorin "${catName}" är nu redo att användas när du skapar eller redigerar kontakter!`);
+            if(input) input.value = '';
+            updateCategoryDropdowns();
+            renderCategoryManagerTable();
+        }
+
+        async function renameCategoryPrompt(oldCat) {
+            const newCat = prompt(`Ange nytt namn för kategorin "${oldCat}":`, oldCat);
+            if (!newCat || !newCat.trim() || newCat.trim() === oldCat) return;
+
+            const trimmedNewCat = newCat.trim();
+            if (!supabaseClient) return;
+
+            // Uppdatera alla kontakter som har denna kategori
+            const contactsToUpdate = allContacts.filter(c => c.category === oldCat);
+            for (let c of contactsToUpdate) {
+                await supabaseClient
+                    .from('smultronstallet_contacts')
+                    .update({ category: trimmedNewCat })
+                    .eq('id', c.id);
+            }
+
+            await fetchContacts();
+            alert(`Kategorin har dött om från "${oldCat}" till "${trimmedNewCat}".`);
+        }
+
+        async function deleteCategory(catName) {
+            if (!confirm(`Är du säker på att du vill ta bort kategorin "${catName}"? Kontakterna i kategorin kommer att bli utan kategori (Övrigt).`)) return;
+            if (!supabaseClient) return;
+
+            const contactsToUpdate = allContacts.filter(c => c.category === catName);
+            for (let c of contactsToUpdate) {
+                await supabaseClient
+                    .from('smultronstallet_contacts')
+                    .update({ category: '' })
+                    .eq('id', c.id);
+            }
+
+            await fetchContacts();
+            alert(`Kategorin "${catName}" har tagits bort.`);
+        }
+
+        function filterData() {
+            const searchInput = document.getElementById('searchInput');
+            const catSelect = document.getElementById('categoryFilter');
+            
+            const query = searchInput ? searchInput.value.toLowerCase() : '';
+            const selectedCat = catSelect ? catSelect.value : '';
+
+            const activeAndSearched = allContacts.filter(item => {
+                if (item.deleted_at) return false; 
+                const matchesQuery = item.name.toLowerCase().includes(query) || item.phone.toLowerCase().includes(query);
+                const matchesCat = selectedCat === "" || item.category === selectedCat;
+                return matchesQuery && matchesCat;
+            });
+
+            renderTable(activeAndSearched);
+        }
+
+        function clearSearchInput() {
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput) {
+                searchInput.value = '';
+                filterData();
+                searchInput.focus();
+            }
+        }
+
+        function copyPhoneNumber(phone, btnElement) {
+            navigator.clipboard.writeText(phone).then(() => {
+                const originalText = btnElement.innerText;
+                btnElement.innerText = 'Kopierat! ✨';
+                btnElement.style.backgroundColor = '#dcfce7';
+                btnElement.style.color = '#166534';
+                setTimeout(() => {
+                    btnElement.innerText = originalText;
+                    btnElement.style.backgroundColor = '';
+                    btnElement.style.color = '';
+                }, 1500);
+            }).catch(err => {
+                console.error('Kunde inte kopiera:', err);
+            });
+        }
+
+        function renderTable(displayList) {
+            const tbody = document.getElementById('tableBody');
+            if (!tbody) return;
+
+            const finalVisibleList = displayList.filter(item => !hiddenContactIds.has(item.id));
+
+            if (finalVisibleList.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding: 30px; color: #64748b;">Inga kontakter synliga i din vy.</td></tr>`;
+                return;
+            }
+
+            let html = '';
+            finalVisibleList.forEach(item => {
+                html += `
+                    <tr>
+                        <td><strong>${escapeHtml(item.name)}</strong></td>
+                        <td style="white-space: nowrap;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <a href="tel:${escapeHtml(item.phone)}" style="color: var(--accent); text-decoration: none;">${escapeHtml(item.phone)}</a>
+                                <button class="btn-copy" onclick="copyPhoneNumber('${escapeHtml(item.phone)}', this)" title="Kopiera nummer">Kopiera</button>
+                            </div>
+                        </td>
+                        <td><span class="badge">${escapeHtml(item.category || 'Övrigt')}</span></td>
+                        <td style="text-align: right;">
+                            <div class="action-buttons">
+                                <button class="btn-danger" onclick="hideContact('${item.id}')" title="Dölj för dig själv">Dölj</button>
+                                <button class="btn-warning" onclick="openDeleteModal('${item.id}', '${escapeHtml(item.name)}')">Ta bort</button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            tbody.innerHTML = html;
+        }
+
+        function renderBinModalList() {
+            const tbody = document.getElementById('binTableBody');
+            if (!tbody) return;
+
+            const binList = allContacts.filter(item => item.deleted_at);
+
+            if (binList.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding: 20px; color: #64748b;">Papperskorgen är tom.</td></tr>`;
+                return;
+            }
+
+            let html = '';
+            binList.sort((a, b) => new Date(b.deleted_at) - new Date(a.deleted_at)).forEach(item => {
+                const dateStr = new Date(item.deleted_at).toLocaleString('sv-SE', { dateStyle: 'short', timeStyle: 'short' });
+                html += `
+                    <tr class="row-bin">
+                        <td><strong>${escapeHtml(item.name)}</strong> <span class="badge-bin">${escapeHtml(item.phone)}</span></td>
+                        <td><span class="badge">${escapeHtml(item.category || 'Övrigt')}</span></td>
+                        <td style="font-weight: 600; color: #991b1b;">${escapeHtml(item.deleted_by || 'Okänd')}</td>
+                        <td><span class="badge-reason">${escapeHtml(item.deleted_reason || 'Ej angivet')}</span></td>
+                        <td style="font-size: 0.85rem; color: #64748b;">${dateStr}</td>
+                        <td style="text-align: right;">
+                            <button class="btn-restore" onclick="restoreFromBin('${item.id}')">Ångra</button>
+                        </td>
+                    </tr>
+                `;
+            });
+            tbody.innerHTML = html;
+        }
+
+        function renderHiddenModalList() {
+            const tbody = document.getElementById('hiddenTableBody');
+            if (!tbody) return;
+
+            const hiddenList = allContacts.filter(item => hiddenContactIds.has(item.id) && !item.deleted_at);
+
+            if (hiddenList.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding: 20px; color: #64748b;">Du har inga personligen dolda kontakter.</td></tr>`;
+                return;
+            }
+
+            let html = '';
+            hiddenList.forEach(item => {
+                html += `
+                    <tr>
+                        <td><strong>${escapeHtml(item.name)}</strong></td>
+                        <td>${escapeHtml(item.phone)}</td>
+                        <td><span class="badge">${escapeHtml(item.category || 'Övrigt')}</span></td>
+                        <td style="text-align: right;">
+                            <button class="btn-restore" onclick="unhideContact('${item.id}')">Visa igen</button>
+                        </td>
+                    </tr>
+                `;
+            });
+            tbody.innerHTML = html;
+        }
+
+        async function hideContact(contactId) {
+            if (!supabaseClient) return;
+            const { error } = await supabaseClient
+                .from('smultronstallet_hidden')
+                .insert([{ agent_name: currentAgent, contact_id: contactId }]);
+
+            if (error) alert("Kunde inte dölja: " + error.message);
+            else await fetchContacts();
+        }
+
+        async function unhideContact(contactId) {
+            if (!supabaseClient) return;
+            const { error } = await supabaseClient
+                .from('smultronstallet_hidden')
+                .delete()
+                .eq('agent_name', currentAgent)
+                .eq('contact_id', contactId);
+
+            if (error) alert("Kunde inte återställa: " + error.message);
+            else await fetchContacts();
+        }
+
+        function openDeleteModal(contactId, contactName) {
+            contactToDeleteId = contactId;
+            document.getElementById('deleteContactName').innerText = contactName;
+            document.getElementById('deleteReasonSelect').value = 'Felskrivning'; 
+            document.getElementById('deleteModal').style.display = 'flex';
+        }
+
+        function closeDeleteModal() {
+            document.getElementById('deleteModal').style.display = 'none';
+            contactToDeleteId = null;
+        }
+
+        async function confirmSoftDelete() {
+            if (!contactToDeleteId || !supabaseClient) return;
+            
+            const reason = document.getElementById('deleteReasonSelect').value;
+
+            const { error } = await supabaseClient
+                .from('smultronstallet_contacts')
+                .update({ 
+                    deleted_at: new Date().toISOString(), 
+                    deleted_by: currentAgent,
+                    deleted_reason: reason
+                })
+                .eq('id', contactToDeleteId);
+
+            if (error) {
+                alert("Kunde inte flytta till papperskorgen: " + error.message);
+            } else {
+                closeDeleteModal();
+                await fetchContacts(); 
+            }
+        }
+
+        async function restoreFromBin(contactId) {
+            if (!supabaseClient) return;
+            const { error } = await supabaseClient
+                .from('smultronstallet_contacts')
+                .update({ 
+                    deleted_at: null, 
+                    deleted_by: null,
+                    deleted_reason: null
+                })
+                .eq('id', contactId);
+
+            if (error) alert("Kunde inte ångra: " + error.message);
+            else await fetchContacts();
+        }
+
+        function openCategoryManagerModal() { 
+            renderCategoryManagerTable();
+            document.getElementById('categoryManagerModal').style.display = 'flex'; 
+        }
+        function closeCategoryManagerModal() { document.getElementById('categoryManagerModal').style.display = 'none'; }
+        function openHiddenModal() { document.getElementById('hiddenModal').style.display = 'flex'; }
+        function closeHiddenModal() { document.getElementById('hiddenModal').style.display = 'none'; }
+        function openBinModal() { document.getElementById('binModal').style.display = 'flex'; }
+        function closeBinModal() { document.getElementById('binModal').style.display = 'none'; }
+        function openAddModal() { document.getElementById('addModal').style.display = 'flex'; }
+        function closeAddModal() { document.getElementById('addModal').style.display = 'none'; }
+
+        async function saveNewContact() {
+            if (!supabaseClient) return;
+            const nameInput = document.getElementById('inputName');
+            const phoneInput = document.getElementById('inputPhone');
+            const catSelect = document.getElementById('inputCatSelect');
+            const catCustom = document.getElementById('inputCatCustom');
+
+            const name = nameInput ? nameInput.value.trim() : '';
+            const phone = phoneInput ? phoneInput.value.trim() : '';
+            let category = catSelect && catSelect.value === '__new__' ? (catCustom ? catCustom.value.trim() : '') : (catSelect ? catSelect.value : '');
+
+            if (!name || !phone) {
+                alert("Vänligen fyll i namn och telefonnummer.");
+                return;
+            }
+
+            const { error } = await supabaseClient
+                .from('smultronstallet_contacts')
+                .insert([{ name, phone, category, created_at: new Date().toISOString(), created_by: currentAgent }]);
+
+            if (error) alert("Kunde inte spara: " + error.message);
+            else {
+                closeAddModal();
+                if(nameInput) nameInput.value = '';
+                if(phoneInput) phoneInput.value = '';
+                if(catCustom) catCustom.value = '';
+                if(catSelect) catSelect.value = '';
+                await fetchContacts();
+            }
+        }
+
+        function checkCategorySelect(select) {
+            const customInput = document.getElementById('inputCatCustom');
+            if (!customInput) return;
+            customInput.style.display = select.value === '__new__' ? 'block' : 'none';
+            if(select.value !== '__new__') customInput.value = '';
+            else customInput.focus();
+        }
+
+        function downloadNote(textareaId, filename) {
+            const text = document.getElementById(textareaId).value;
+            if (!text.trim()) {
+                alert("🛑 Hahaha, det där papperet är ju helt tomt! Kladda ner lite text först innan du sparar ner det! 😅📝");
+                return;
+            }
+            const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+    </script>
+</body>
+</html>
