@@ -38,18 +38,12 @@
 
         .card { background: var(--card-bg); border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid var(--border); box-shadow: 0 2px 10px rgba(0,0,0,0.03); }
 
-        /* FLYTANDE VERKTYGSFÄLT (SÖKRUTA) */
         .toolbar { 
             display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; 
-            position: sticky; 
-            top: 0; 
-            z-index: 100; 
-            background-color: rgba(255, 255, 255, 0.95); 
-            backdrop-filter: blur(8px);
-            padding: 20px; 
-            margin: -20px -20px 15px -20px; 
-            border-bottom: 1px solid var(--border);
-            border-radius: 12px 12px 0 0;
+            position: sticky; top: 0; z-index: 100; 
+            background-color: rgba(255, 255, 255, 0.95); backdrop-filter: blur(8px);
+            padding: 20px; margin: -20px -20px 15px -20px; 
+            border-bottom: 1px solid var(--border); border-radius: 12px 12px 0 0;
             box-shadow: 0 4px 15px rgba(0,0,0,0.05);
         }
 
@@ -66,33 +60,31 @@
         .btn-warning { background-color: #fef3c7; color: #b45309; padding: 6px 10px; font-size: 0.8rem; }
         .btn-warning:hover { background-color: #f59e0b; color: white; }
         .btn-restore { background-color: #dcfce7; color: var(--success); padding: 6px 12px; font-size: 0.8rem; border: 1px solid #bbf7d0; }
-        .btn-restore:hover { background-color: #success; color: white; }
         .btn-copy { background-color: #f1f5f9; color: var(--secondary); padding: 4px 8px; font-size: 0.75rem; border: 1px solid var(--border); }
         .btn-copy:hover { background-color: #e2e8f0; color: var(--primary); }
 
         .action-buttons { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
 
         table { width: 100%; border-collapse: collapse; text-align: left; }
-        th, td { padding: 10px 14px; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
+        th, td { padding: 10px 14px; border-bottom: 1px solid var(--border); font-size: 0.9rem; vertical-align: middle; }
         th { font-weight: 600; color: var(--secondary); background-color: #f1f5f9; }
 
-        .badge { background-color: #e0f2fe; color: #0369a1; padding: 3px 8px; border-radius: 10px; font-size: 0.75rem; }
+        .badge { background-color: #e0f2fe; color: #0369a1; padding: 3px 8px; border-radius: 10px; font-size: 0.75rem; display: inline-block; }
         .badge-bin { background-color: #fee2e2; color: #991b1b; padding: 3px 8px; border-radius: 10px; font-size: 0.75rem; margin-left: 6px; }
         .badge-reason { background-color: #fef3c7; color: #b45309; padding: 3px 8px; border-radius: 10px; font-size: 0.75rem; }
+        .phone-row { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+        .phone-row:last-child { margin-bottom: 0; }
 
         .row-bin { background-color: #fef2f2; opacity: 0.9; }
 
-        /* FLYTANDE HÖGERSPALT FÖR KLADDPAPPER */
         .sidebar-sticky { position: sticky; top: 20px; }
 
-        /* Post-it kladdpapper */
         .postit { background: #fef08a; border: 1px solid #fde047; border-radius: 8px; padding: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 15px; }
         .postit textarea { width: 100%; height: 130px; background: transparent; border: none; resize: vertical; font-size: 0.9rem; outline: none; color: #713f12; margin-top: 8px; }
         .postit-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 5px; }
 
-        /* Modals */
         .modal { display: flex; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); justify-content: center; align-items: center; z-index: 1000; }
-        .modal-content { background: white; padding: 30px; border-radius: 12px; width: 100%; max-width: 400px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+        .modal-content { background: white; padding: 30px; border-radius: 12px; width: 100%; max-width: 420px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
         .modal-large { background: white; padding: 30px; border-radius: 12px; width: 100%; max-width: 900px; max-height: 80vh; overflow-y: auto; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
         .form-group { margin-bottom: 15px; }
         .form-group label { display: block; margin-bottom: 6px; font-size: 0.9rem; font-weight: 500; }
@@ -126,14 +118,22 @@
     <!-- MODAL: Ny Kontakt -->
     <div class="modal" id="addModal" style="display: none;">
         <div class="modal-content">
-            <div style="font-size: 1.2rem; font-weight: 600; margin-bottom: 15px; color: var(--primary);">Dela nytt nummer</div>
+            <div style="font-size: 1.2rem; font-weight: 600; margin-bottom: 15px; color: var(--primary);">Dela ny kontakt</div>
             <div class="form-group">
                 <label>Namn / Företag</label>
                 <input type="text" id="inputName" placeholder="T.ex. Bank Support">
             </div>
             <div class="form-group">
-                <label>Telefonnummer</label>
-                <input type="text" id="inputPhone" placeholder="T.ex. 08-123 456">
+                <label>Telefonnummer 1 (Primärt)</label>
+                <input type="text" id="inputPhone1" placeholder="T.ex. 08-123 456">
+            </div>
+            <div class="form-group">
+                <label>Telefonnummer 2 (Valfritt)</label>
+                <input type="text" id="inputPhone2" placeholder="T.ex. 08-123 457">
+            </div>
+            <div class="form-group">
+                <label>Telefonnummer 3 (Valfritt)</label>
+                <input type="text" id="inputPhone3" placeholder="T.ex. 08-123 458">
             </div>
             <div class="form-group">
                 <label>Kategori</label>
@@ -195,7 +195,7 @@
                 <div style="font-size: 1.2rem; font-weight: 600; color: #991b1b;">🗑️ Papperskorg & Ändringslogg</div>
                 <button class="btn-secondary" onclick="closeBinModal()">Stäng</button>
             </div>
-            <p style="font-size: 0.85rem; color: #64748b; margin-bottom: 15px;">Här loggas kontakter som tagits bort från den gemensamma poolen. Om en kontakt raderats av misstag kan du återställa den härifrån. Poster rensas permanent efter 3 månader.</p>
+            <p style="font-size: 0.85rem; color: #64748b; margin-bottom: 15px;">Här loggas kontakter som tagits bort från den gemensamma poolen. Om en kontakt raderats av misstag kan du återställa den härifrån.</p>
             <div style="overflow-x: auto;">
                 <table>
                     <thead>
@@ -229,11 +229,8 @@
         </header>
 
         <div class="main-layout">
-            <!-- VÄNSTER SPALT: Tabellen -->
             <div>
                 <div class="card" style="margin-bottom: 0;">
-                                        
-                    <!-- Verktygsfält med sökfält och en fast Rensa-knapp -->
                     <div class="toolbar">
                         <div style="display: flex; gap: 8px; flex: 1; flex-wrap: wrap; align-items: center;">
                             <input type="text" id="searchInput" placeholder="Sök namn, nummer..." onkeyup="filterData()">
@@ -245,11 +242,10 @@
                         <div style="display: flex; gap: 8px;">
                             <button class="btn-secondary" onclick="openHiddenModal()" style="font-size: 0.8rem;">🙈 Mina Dolda</button>
                             <button class="btn-secondary" onclick="openBinModal()" style="font-size: 0.8rem; background-color: #fee2e2; color: #991b1b;">🗑️ Logg & Bin</button>
-                            <button class="btn-primary" onclick="openAddModal()">+ Dela nytt nummer</button>
+                            <button class="btn-primary" onclick="openAddModal()">+ Dela ny kontakt</button>
                         </div>
                     </div>
 
-                    <!-- HUVUDTABELL -->
                     <div style="overflow-x: auto;">
                         <table>
                             <thead>
@@ -268,9 +264,7 @@
                 </div>
             </div>
 
-            <!-- HÖGER SPALT: Kladdpapper -->
             <div class="sidebar-sticky">
-                <!-- KLADDPAPPER 1 -->
                 <div class="postit">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
                         <span style="font-weight: 600; color: #713f12; font-size: 0.85rem;">📝 Kladdpapper 1</span>
@@ -283,7 +277,6 @@
                     </div>
                 </div>
 
-                <!-- KLADDPAPPER 2 -->
                 <div class="postit">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
                         <span style="font-weight: 600; color: #713f12; font-size: 0.85rem;">📝 Kladdpapper 2</span>
@@ -296,7 +289,6 @@
                     </div>
                 </div>
 
-                <!-- KLADDPAPPER 3 -->
                 <div class="postit">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
                         <span style="font-weight: 600; color: #713f12; font-size: 0.85rem;">📝 Kladdpapper 3</span>
@@ -418,7 +410,10 @@
 
             const activeAndSearched = allContacts.filter(item => {
                 if (item.deleted_at) return false; 
-                const matchesQuery = item.name.toLowerCase().includes(query) || item.phone.toLowerCase().includes(query);
+                const p1 = (item.phone || '').toLowerCase();
+                const p2 = (item.phone2 || '').toLowerCase();
+                const p3 = (item.phone3 || '').toLowerCase();
+                const matchesQuery = item.name.toLowerCase().includes(query) || p1.includes(query) || p2.includes(query) || p3.includes(query);
                 const matchesCat = selectedCat === "" || item.category === selectedCat;
                 return matchesQuery && matchesCat;
             });
@@ -464,15 +459,33 @@
 
             let html = '';
             finalVisibleList.forEach(item => {
+                let phonesHtml = '';
+                if (item.phone) {
+                    phonesHtml += `
+                        <div class="phone-row">
+                            <a href="tel:${escapeHtml(item.phone)}" style="color: var(--accent); text-decoration: none;">${escapeHtml(item.phone)}</a>
+                            <button class="btn-copy" onclick="copyPhoneNumber('${escapeHtml(item.phone)}', this)" title="Kopiera nummer">Kopiera</button>
+                        </div>`;
+                }
+                if (item.phone2) {
+                    phonesHtml += `
+                        <div class="phone-row">
+                            <a href="tel:${escapeHtml(item.phone2)}" style="color: var(--accent); text-decoration: none;">${escapeHtml(item.phone2)}</a>
+                            <button class="btn-copy" onclick="copyPhoneNumber('${escapeHtml(item.phone2)}', this)" title="Kopiera nummer">Kopiera</button>
+                        </div>`;
+                }
+                if (item.phone3) {
+                    phonesHtml += `
+                        <div class="phone-row">
+                            <a href="tel:${escapeHtml(item.phone3)}" style="color: var(--accent); text-decoration: none;">${escapeHtml(item.phone3)}</a>
+                            <button class="btn-copy" onclick="copyPhoneNumber('${escapeHtml(item.phone3)}', this)" title="Kopiera nummer">Kopiera</button>
+                        </div>`;
+                }
+
                 html += `
                     <tr>
                         <td><strong>${escapeHtml(item.name)}</strong></td>
-                        <td style="white-space: nowrap;">
-                            <div style="display: flex; align-items: center; gap: 8px;">
-                                <a href="tel:${escapeHtml(item.phone)}" style="color: var(--accent); text-decoration: none;">${escapeHtml(item.phone)}</a>
-                                <button class="btn-copy" onclick="copyPhoneNumber('${escapeHtml(item.phone)}', this)" title="Kopiera nummer">Kopiera</button>
-                            </div>
-                        </td>
+                        <td style="white-space: nowrap;">${phonesHtml}</td>
                         <td><span class="badge">${escapeHtml(item.category || 'Övrigt')}</span></td>
                         <td style="text-align: right;">
                             <div class="action-buttons">
@@ -501,9 +514,10 @@
             let html = '';
             binList.sort((a, b) => new Date(b.deleted_at) - new Date(a.deleted_at)).forEach(item => {
                 const dateStr = new Date(item.deleted_at).toLocaleString('sv-SE', { dateStyle: 'short', timeStyle: 'short' });
+                const allPhones = [item.phone, item.phone2, item.phone3].filter(Boolean).join(', ');
                 html += `
                     <tr class="row-bin">
-                        <td><strong>${escapeHtml(item.name)}</strong> <span class="badge-bin">${escapeHtml(item.phone)}</span></td>
+                        <td><strong>${escapeHtml(item.name)}</strong> <span class="badge-bin">${escapeHtml(allPhones)}</span></td>
                         <td><span class="badge">${escapeHtml(item.category || 'Övrigt')}</span></td>
                         <td style="font-weight: 600; color: #991b1b;">${escapeHtml(item.deleted_by || 'Okänd')}</td>
                         <td><span class="badge-reason">${escapeHtml(item.deleted_reason || 'Ej angivet')}</span></td>
@@ -530,10 +544,11 @@
 
             let html = '';
             hiddenList.forEach(item => {
+                const allPhones = [item.phone, item.phone2, item.phone3].filter(Boolean).join(', ');
                 html += `
                     <tr>
                         <td><strong>${escapeHtml(item.name)}</strong></td>
-                        <td>${escapeHtml(item.phone)}</td>
+                        <td>${escapeHtml(allPhones)}</td>
                         <td><span class="badge">${escapeHtml(item.category || 'Övrigt')}</span></td>
                         <td style="text-align: right;">
                             <button class="btn-restore" onclick="unhideContact('${item.id}')">Visa igen</button>
@@ -618,35 +633,41 @@
         function openHiddenModal() { document.getElementById('hiddenModal').style.display = 'flex'; }
         function closeHiddenModal() { document.getElementById('hiddenModal').style.display = 'none'; }
         function openBinModal() { document.getElementById('binModal').style.display = 'flex'; }
-        function closeBinModal() { document.getElementById('binModal').style.display = 'none'; }
+        >function closeBinModal() { document.getElementById('binModal').style.display = 'none'; }
         function openAddModal() { document.getElementById('addModal').style.display = 'flex'; }
         function closeAddModal() { document.getElementById('addModal').style.display = 'none'; }
 
         async function saveNewContact() {
             if (!supabaseClient) return;
             const nameInput = document.getElementById('inputName');
-            const phoneInput = document.getElementById('inputPhone');
+            const phoneInput1 = document.getElementById('inputPhone1');
+            const phoneInput2 = document.getElementById('inputPhone2');
+            const phoneInput3 = document.getElementById('inputPhone3');
             const catSelect = document.getElementById('inputCatSelect');
             const catCustom = document.getElementById('inputCatCustom');
 
             const name = nameInput ? nameInput.value.trim() : '';
-            const phone = phoneInput ? phoneInput.value.trim() : '';
+            const phone = phoneInput1 ? phoneInput1.value.trim() : '';
+            const phone2 = phoneInput2 ? phoneInput2.value.trim() : null;
+            const phone3 = phoneInput3 ? phoneInput3.value.trim() : null;
             let category = catSelect && catSelect.value === '__new__' ? (catCustom ? catCustom.value.trim() : '') : (catSelect ? catSelect.value : '');
 
             if (!name || !phone) {
-                alert("Vänligen fyll i namn och telefonnummer.");
+                alert("Vänligen fyll i namn och åtminstone det första telefonnumret.");
                 return;
             }
 
             const { error } = await supabaseClient
                 .from('smultronstallet_contacts')
-                .insert([{ name, phone, category, created_by: currentAgent }]);
+                .insert([{ name, phone, phone2, phone3, category, created_by: currentAgent }]);
 
             if (error) alert("Kunde inte spara: " + error.message);
             else {
                 closeAddModal();
                 if(nameInput) nameInput.value = '';
-                if(phoneInput) phoneInput.value = '';
+                if(phoneInput1) phoneInput1.value = '';
+                if(phoneInput2) phoneInput2.value = '';
+                if(phoneInput3) phoneInput3.value = '';
                 if(catCustom) catCustom.value = '';
                 if(catSelect) catSelect.value = '';
                 await fetchContacts();
