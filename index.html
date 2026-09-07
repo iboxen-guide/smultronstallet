@@ -38,6 +38,39 @@
 
         .card { background: var(--card-bg); border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid var(--border); box-shadow: 0 2px 10px rgba(0,0,0,0.03); }
 
+        /* ANSLAGSTAVLA / NOTISER */
+        .notice-board-container { margin-bottom: 20px; display: flex; flex-direction: column; gap: 10px; }
+        .info-notice {
+            background: linear-gradient(135deg, #e0f2fe, #bae6fd);
+            border: 1px solid #7dd3fc;
+            color: #0369a1;
+            padding: 14px 20px;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+        }
+        .info-notice-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .info-notice-text { font-size: 0.92rem; font-weight: 600; }
+        .info-notice-meta { font-size: 0.75rem; color: #0284c7; font-style: italic; margin-top: 2px; }
+        .info-notice-details {
+            font-size: 0.88rem;
+            color: #0c4a6e;
+            background: rgba(255, 255, 255, 0.6);
+            padding: 10px 14px;
+            border-radius: 6px;
+            border-left: 3px solid #0284c7;
+            margin-top: 4px;
+            white-space: pre-wrap;
+        }
+
         .toolbar { 
             display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; 
             position: sticky; top: 0; z-index: 100; 
@@ -63,6 +96,8 @@
         .btn-restore:hover { background-color: #16a34a; color: white; }
         .btn-copy { background-color: #f1f5f9; color: var(--secondary); padding: 4px 8px; font-size: 0.75rem; border: 1px solid var(--border); }
         .btn-copy:hover { background-color: #e2e8f0; color: var(--primary); }
+        .btn-info { background-color: #0284c7; color: white; padding: 5px 12px; font-size: 0.8rem; }
+        .btn-info:hover { background-color: #0369a1; }
 
         .action-buttons { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
 
@@ -146,6 +181,25 @@
             <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
                 <button class="btn-secondary" onclick="closeAddModal()">Avbryt</button>
                 <button class="btn-primary" onclick="saveNewContact()">Dela till poolen</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: Ny Notis / Anslag -->
+    <div class="modal" id="addNoticeModal" style="display: none;">
+        <div class="modal-content">
+            <div style="font-size: 1.2rem; font-weight: 600; margin-bottom: 15px; color: var(--primary);">📢 Skriv nytt anslag / notis</div>
+            <div class="form-group">
+                <label>Rubrik / Kort sammanfattning</label>
+                <input type="text" id="noticeTitleInput" placeholder="T.ex. Öppettider midsommar / Driftstörning">
+            </div>
+            <div class="form-group">
+                <label>Detaljerad information (Visas vid "Läs mer")</label>
+                <textarea id="noticeContentInput" placeholder="Skriv mer info här..." style="width: 100%; height: 100px; padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px; font-size: 0.9rem; outline: none; resize: vertical;"></textarea>
+            </div>
+            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
+                <button class="btn-secondary" onclick="closeAddNoticeModal()">Avbryt</button>
+                <button class="btn-primary" onclick="saveNewNotice()">Publicera anslag</button>
             </div>
         </div>
     </div>
@@ -255,8 +309,21 @@
         </header>
 
         <div class="main-layout">
+            <!-- VÄNSTER SPALT: Tabellen & Anslagstavla -->
             <div>
                 <div class="card" style="margin-bottom: 0;">
+
+                    <!-- ANSLAGSTAVLA (Dynamiska notiser) -->
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                        <span style="font-size: 0.95rem; font-weight: 600; color: var(--primary);">📢 Aktuella anslag & Nyheter</span>
+                        <button class="btn-primary" onclick="openAddNoticeModal()" style="font-size: 0.8rem; padding: 6px 12px;">+ Skriv anslag</button>
+                    </div>
+
+                    <div class="notice-board-container" id="noticeBoardContainer">
+                        <div style="color: #64748b; font-size: 0.85rem; font-style: italic; padding: 10px;">Laddar anslag...</div>
+                    </div>
+                    
+                    <!-- Verktygsfält med sökfält och knappar -->
                     <div class="toolbar">
                         <div style="display: flex; gap: 8px; flex: 1; flex-wrap: wrap; align-items: center;">
                             <input type="text" id="searchInput" placeholder="Sök namn, nummer..." onkeyup="filterData()">
@@ -273,6 +340,7 @@
                         </div>
                     </div>
 
+                    <!-- HUVUDTABELL -->
                     <div style="overflow-x: auto;">
                         <table>
                             <thead>
@@ -291,7 +359,9 @@
                 </div>
             </div>
 
+            <!-- HÖGER SPALT: Kladdpapper -->
             <div class="sidebar-sticky">
+                <!-- KLADDPAPPER 1 -->
                 <div class="postit">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
                         <span style="font-weight: 600; color: #713f12; font-size: 0.85rem;">📝 Kladdpapper 1</span>
@@ -304,6 +374,7 @@
                     </div>
                 </div>
 
+                <!-- KLADDPAPPER 2 -->
                 <div class="postit">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
                         <span style="font-weight: 600; color: #713f12; font-size: 0.85rem;">📝 Kladdpapper 2</span>
@@ -316,6 +387,7 @@
                     </div>
                 </div>
 
+                <!-- KLADDPAPPER 3 -->
                 <div class="postit">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
                         <span style="font-weight: 600; color: #713f12; font-size: 0.85rem;">📝 Kladdpapper 3</span>
@@ -339,6 +411,7 @@
 
         let currentAgent = localStorage.getItem('smultron_agent_name') || '';
         let allContacts = [];
+        let allNotices = [];
         let hiddenContactIds = new Set();
         let categories = [];
         let contactToDeleteId = null;
@@ -378,7 +451,111 @@
             const badge = document.getElementById('currentUserDisplay');
             if (badge) badge.innerText = `Aktiv: ${currentAgent}`;
             await fetchContacts();
-            setInterval(fetchContacts, 120000);
+            await fetchNotices();
+            setInterval(() => {
+                fetchContacts();
+                fetchNotices();
+            }, 120000);
+        }
+
+        async function fetchNotices() {
+            if (!supabaseClient) return;
+
+            const { data: notices, error } = await supabaseClient
+                .from('smultronstallet_notices')
+                .select('*')
+                .order('created_at', { ascending: false });
+
+            if (error) {
+                console.error("Fel vid hämtning av anslag:", error);
+                return;
+            }
+
+            allNotices = notices || [];
+            renderNoticeBoard();
+        }
+
+        function renderNoticeBoard() {
+            const container = document.getElementById('noticeBoardContainer');
+            if (!container) return;
+
+            if (allNotices.length === 0) {
+                container.innerHTML = `<div style="color: #64748b; font-size: 0.85rem; font-style: italic; padding: 10px; background: #f8fafc; border-radius: 8px; border: 1px dashed var(--border);">Inga aktiva anslag just nu. Klicka på "+ Skriv anslag" för att lägga till ett!</div>`;
+                return;
+            }
+
+            let html = '';
+            allNotices.forEach((notice, index) => {
+                const dateStr = new Date(notice.created_at).toLocaleString('sv-SE', { dateStyle: 'short', timeStyle: 'short' });
+                const detailId = `noticeDetails_${index}`;
+                
+                html += `
+                    <div class="info-notice">
+                        <div class="info-notice-header">
+                            <div>
+                                <span class="info-notice-text">📌 ${escapeHtml(notice.title)}</span>
+                                <div class="info-notice-meta">Publicerat av <strong>${escapeHtml(notice.created_by)}</strong> den ${dateStr}</div>
+                            </div>
+                            <div style="display: flex; gap: 6px;">
+                                ${notice.content ? `<button class="btn-info" onclick="toggleNoticeDetails('${detailId}')">Läs mer</button>` : ''}
+                                ${notice.created_by === currentAgent ? `<button class="btn-danger" onclick="deleteNotice('${notice.id}')" style="padding: 5px 8px; font-size: 0.75rem;" title="Ta bort anslag">Ta bort</button>` : ''}
+                            </div>
+                        </div>
+                        ${notice.content ? `<div class="info-notice-details" id="${detailId}" style="display: none;">${escapeHtml(notice.content)}</div>` : ''}
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        function toggleNoticeDetails(elementId) {
+            const el = document.getElementById(elementId);
+            if (el) {
+                el.style.display = el.style.display === 'block' ? 'none' : 'block';
+            }
+        }
+
+        async function saveNewNotice() {
+            if (!supabaseClient) return;
+            const titleInput = document.getElementById('noticeTitleInput');
+            const contentInput = document.getElementById('noticeContentInput');
+
+            const title = titleInput ? titleInput.value.trim() : '';
+            const content = contentInput ? contentInput.value.trim() : '';
+
+            if (!title) {
+                alert("Vänligen skriv en rubrik för anslaget.");
+                return;
+            }
+
+            const { error } = await supabaseClient
+                .from('smultronstallet_notices')
+                .insert([{ title, content, created_by: currentAgent, created_at: new Date().toISOString() }]);
+
+            if (error) {
+                alert("Kunde inte publicera anslag: " + error.message);
+            } else {
+                closeAddNoticeModal();
+                if(titleInput) titleInput.value = '';
+                if(contentInput) contentInput.value = '';
+                await fetchNotices();
+            }
+        }
+
+        async function deleteNotice(noticeId) {
+            if (!confirm("Är du säker på att du vill ta bort detta anslag?")) return;
+            if (!supabaseClient) return;
+
+            const { error } = await supabaseClient
+                .from('smultronstallet_notices')
+                .delete()
+                .eq('id', noticeId);
+
+            if (error) {
+                alert("Kunde inte radera anslag: " + error.message);
+            } else {
+                await fetchNotices();
+            }
         }
 
         async function fetchContacts() {
@@ -752,6 +929,8 @@
         function closeBinModal() { document.getElementById('binModal').style.display = 'none'; }
         function openAddModal() { document.getElementById('addModal').style.display = 'flex'; }
         function closeAddModal() { document.getElementById('addModal').style.display = 'none'; }
+        function openAddNoticeModal() { document.getElementById('addNoticeModal').style.display = 'flex'; }
+        function closeAddNoticeModal() { document.getElementById('addNoticeModal').style.display = 'none'; }
 
         async function saveNewContact() {
             if (!supabaseClient) return;
