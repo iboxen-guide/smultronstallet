@@ -257,6 +257,11 @@
                             <select id="categoryFilter" onchange="filterData()">
                                 <option value="">Alla kategorier</option>
                             </select>
+                            <select id="sortSelect" onchange="filterData()" style="max-width: 170px;">
+                                <option value="newest">🕒 Nyast först</option>
+                                <option value="az" selected>🔤 Alfabetiskt (A-Ö)</option>
+                                <option value="za">🔤 Alfabetiskt (Ö-A)</option>
+                            </select>
                         </div>
                         <div style="display: flex; gap: 8px; flex-wrap: wrap;">
                             <button class="btn-secondary" onclick="openCategoryManagerModal()" style="font-size: 0.8rem;">🏷️ Hantera kategorier</button>
@@ -513,16 +518,30 @@
         function filterData() {
             const searchInput = document.getElementById('searchInput');
             const catSelect = document.getElementById('categoryFilter');
+            const sortSelect = document.getElementById('sortSelect');
             
             const query = searchInput ? searchInput.value.toLowerCase() : '';
             const selectedCat = catSelect ? catSelect.value : '';
+            const sortOrder = sortSelect ? sortSelect.value : 'az';
 
-            const activeAndSearched = allContacts.filter(item => {
+            let activeAndSearched = allContacts.filter(item => {
                 if (item.deleted_at) return false; 
                 const p = (item.phone || '').toLowerCase();
                 const matchesQuery = item.name.toLowerCase().includes(query) || p.includes(query);
                 const matchesCat = selectedCat === "" || item.category === selectedCat;
                 return matchesQuery && matchesCat;
+            });
+
+            // Sortering
+            activeAndSearched.sort((a, b) => {
+                if (sortOrder === 'az') {
+                    return a.name.localeCompare(b.name, 'sv', { sensitivity: 'base' });
+                } else if (sortOrder === 'za') {
+                    return b.name.localeCompare(a.name, 'sv', { sensitivity: 'base' });
+                } else if (sortOrder === 'newest') {
+                    return new Date(b.created_at) - new Date(a.created_at);
+                }
+                return 0;
             });
 
             renderTable(activeAndSearched);
