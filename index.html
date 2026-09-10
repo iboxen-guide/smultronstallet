@@ -73,8 +73,7 @@
         .badge { background-color: #e0f2fe; color: #0369a1; padding: 3px 8px; border-radius: 10px; font-size: 0.75rem; display: inline-block; }
         .badge-bin { background-color: #fee2e2; color: #991b1b; padding: 3px 8px; border-radius: 10px; font-size: 0.75rem; margin-left: 6px; }
         .badge-reason { background-color: #fef3c7; color: #b45309; padding: 3px 8px; border-radius: 10px; font-size: 0.75rem; }
-        .phone-row { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
-        .phone-row:last-child { margin-bottom: 0; }
+        .phone-row { display: flex; align-items: center; gap: 8px; }
 
         .row-bin { background-color: #fef2f2; opacity: 0.9; }
 
@@ -125,16 +124,8 @@
                 <input type="text" id="inputName" placeholder="T.ex. Bank Support">
             </div>
             <div class="form-group">
-                <label>Telefonnummer 1 (Primärt)</label>
+                <label>Telefonnummer</label>
                 <input type="text" id="inputPhone1" placeholder="T.ex. 08-123 456">
-            </div>
-            <div class="form-group">
-                <label>Telefonnummer 2 (Valfritt)</label>
-                <input type="text" id="inputPhone2" placeholder="T.ex. 08-123 457">
-            </div>
-            <div class="form-group">
-                <label>Telefonnummer 3 (Valfritt)</label>
-                <input type="text" id="inputPhone3" placeholder="T.ex. 08-123 458">
             </div>
             <div class="form-group">
                 <label>Kategori</label>
@@ -528,10 +519,8 @@
 
             const activeAndSearched = allContacts.filter(item => {
                 if (item.deleted_at) return false; 
-                const p1 = (item.phone || '').toLowerCase();
-                const p2 = (item.phone2 || '').toLowerCase();
-                const p3 = (item.phone3 || '').toLowerCase();
-                const matchesQuery = item.name.toLowerCase().includes(query) || p1.includes(query) || p2.includes(query) || p3.includes(query);
+                const p = (item.phone || '').toLowerCase();
+                const matchesQuery = item.name.toLowerCase().includes(query) || p.includes(query);
                 const matchesCat = selectedCat === "" || item.category === selectedCat;
                 return matchesQuery && matchesCat;
             });
@@ -577,33 +566,19 @@
 
             let html = '';
             finalVisibleList.forEach(item => {
-                let phonesHtml = '';
+                let phoneHtml = '';
                 if (item.phone) {
-                    phonesHtml += `
+                    phoneHtml = `
                         <div class="phone-row">
                             <a href="tel:${escapeHtml(item.phone)}" style="color: var(--accent); text-decoration: none;">${escapeHtml(item.phone)}</a>
                             <button class="btn-copy" onclick="copyPhoneNumber('${escapeHtml(item.phone)}', this)" title="Kopiera nummer">Kopiera</button>
-                        </div>`;
-                }
-                if (item.phone2) {
-                    phonesHtml += `
-                        <div class="phone-row">
-                            <a href="tel:${escapeHtml(item.phone2)}" style="color: var(--accent); text-decoration: none;">${escapeHtml(item.phone2)}</a>
-                            <button class="btn-copy" onclick="copyPhoneNumber('${escapeHtml(item.phone2)}', this)" title="Kopiera nummer">Kopiera</button>
-                        </div>`;
-                }
-                if (item.phone3) {
-                    phonesHtml += `
-                        <div class="phone-row">
-                            <a href="tel:${escapeHtml(item.phone3)}" style="color: var(--accent); text-decoration: none;">${escapeHtml(item.phone3)}</a>
-                            <button class="btn-copy" onclick="copyPhoneNumber('${escapeHtml(item.phone3)}', this)" title="Kopiera nummer">Kopiera</button>
                         </div>`;
                 }
 
                 html += `
                     <tr>
                         <td><strong>${escapeHtml(item.name)}</strong></td>
-                        <td style="white-space: nowrap;">${phonesHtml}</td>
+                        <td style="white-space: nowrap;">${phoneHtml}</td>
                         <td><span class="badge">${escapeHtml(item.category || 'Övrigt')}</span></td>
                         <td style="text-align: right;">
                             <div class="action-buttons">
@@ -632,10 +607,9 @@
             let html = '';
             binList.sort((a, b) => new Date(b.deleted_at) - new Date(a.deleted_at)).forEach(item => {
                 const dateStr = new Date(item.deleted_at).toLocaleString('sv-SE', { dateStyle: 'short', timeStyle: 'short' });
-                const allPhones = [item.phone, item.phone2, item.phone3].filter(Boolean).join(', ');
                 html += `
                     <tr class="row-bin">
-                        <td><strong>${escapeHtml(item.name)}</strong> <span class="badge-bin">${escapeHtml(allPhones)}</span></td>
+                        <td><strong>${escapeHtml(item.name)}</strong> <span class="badge-bin">${escapeHtml(item.phone || '')}</span></td>
                         <td><span class="badge">${escapeHtml(item.category || 'Övrigt')}</span></td>
                         <td style="font-weight: 600; color: #991b1b;">${escapeHtml(item.deleted_by || 'Okänd')}</td>
                         <td><span class="badge-reason">${escapeHtml(item.deleted_reason || 'Ej angivet')}</span></td>
@@ -662,11 +636,10 @@
 
             let html = '';
             hiddenList.forEach(item => {
-                const allPhones = [item.phone, item.phone2, item.phone3].filter(Boolean).join(', ');
                 html += `
                     <tr>
                         <td><strong>${escapeHtml(item.name)}</strong></td>
-                        <td>${escapeHtml(allPhones)}</td>
+                        <td>${escapeHtml(item.phone || '')}</td>
                         <td><span class="badge">${escapeHtml(item.category || 'Övrigt')}</span></td>
                         <td style="text-align: right;">
                             <button class="btn-restore" onclick="unhideContact('${item.id}')">Visa igen</button>
@@ -764,33 +737,27 @@
             if (!supabaseClient) return;
             const nameInput = document.getElementById('inputName');
             const phoneInput1 = document.getElementById('inputPhone1');
-            const phoneInput2 = document.getElementById('inputPhone2');
-            const phoneInput3 = document.getElementById('inputPhone3');
             const catSelect = document.getElementById('inputCatSelect');
             const catCustom = document.getElementById('inputCatCustom');
 
             const name = nameInput ? nameInput.value.trim() : '';
             const phone = phoneInput1 ? phoneInput1.value.trim() : '';
-            const phone2 = phoneInput2 ? phoneInput2.value.trim() : null;
-            const phone3 = phoneInput3 ? phoneInput3.value.trim() : null;
             let category = catSelect && catSelect.value === '__new__' ? (catCustom ? catCustom.value.trim() : '') : (catSelect ? catSelect.value : '');
 
             if (!name || !phone) {
-                alert("Vänligen fyll i namn och åtminstone det första telefonnumret.");
+                alert("Vänligen fyll i namn och telefonnummer.");
                 return;
             }
 
             const { error } = await supabaseClient
                 .from('smultronstallet_contacts')
-                .insert([{ name, phone, phone2, phone3, category, created_at: new Date().toISOString(), created_by: currentAgent }]);
+                .insert([{ name, phone, category, created_at: new Date().toISOString(), created_by: currentAgent }]);
 
             if (error) alert("Kunde inte spara: " + error.message);
             else {
                 closeAddModal();
                 if(nameInput) nameInput.value = '';
                 if(phoneInput1) phoneInput1.value = '';
-                if(phoneInput2) phoneInput2.value = '';
-                if(phoneInput3) phoneInput3.value = '';
                 if(catCustom) catCustom.value = '';
                 if(catSelect) catSelect.value = '';
                 await fetchContacts();
